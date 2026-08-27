@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Cython build artifacts (te NIE powinny być w repo)
+rootx/license.c
+rootx/_config.c
+
+# WAŻNE: źródła plików chronionych też NIE powinny być w repo
+# (odkomentuj po skompilowaniu do .so/.pyd i usunięciu .py)
+# rootx/license.py
+# rootx/_config.py
+
+# Skompilowane pliki ochrony — SĄ w repo (platform-specific)
+!rootx/*.so
+!rootx/*.pyd
+!rootx/*.py.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logi
+*.log
+
+# Cache środowiska
+*.env
+.env
+
+# Źródła plików chronionych — NIE commituj
+rootx/license.py
+rootx/_config.py
+rootx/license.c
+rootx/_config.c
+build/
