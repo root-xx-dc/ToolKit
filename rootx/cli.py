@@ -36,6 +36,7 @@ from rootx import (
     reports,
     scheduler,
     security,
+    self_updater,
     services,
     smart_disk,
     ssl_inspector,
@@ -1435,6 +1436,7 @@ def update_screen() -> None:
             ("2", "Step by step"),
             ("3", "Cleanup only"),
             ("4", "Estimate upgradable packages"),
+            ("5", "Check for ROOT//X TOOLKIT updates (GitHub)"),
             ("0", "Back"),
         ])
         choice = _ask("update")
@@ -1443,6 +1445,23 @@ def update_screen() -> None:
         elif choice == "4":
             est = update_center.estimate_upgradable()
             _info(est, title="Upgradable Packages")
+        elif choice == "5":
+            print(f"\n  {C.CYAN}[*] {T.get('update_downloading', 'Checking for updates on GitHub...')}{C.RESET}")
+            has_update, info = self_updater.check_for_updates()
+            if has_update and info:
+                short_sha = info.get("short_sha", "latest")
+                msg = info.get("message", "")
+                _warning(f"New update available on GitHub: [{short_sha}] {msg}")
+                if _confirm(T.get("update_prompt", "Do you want to update now?"), default=True):
+                    ok, err = self_updater.apply_update()
+                    if ok:
+                        _success(T.get("update_success", "Update installed! Restarting..."))
+                        time.sleep(1.2)
+                        self_updater.restart_toolkit()
+                    else:
+                        _error(f"{T.get('update_failed', 'Update failed.')} ({err})")
+            else:
+                _success(T.get("update_uptodate", "Toolkit is already up to date."))
         elif choice == "1":
             if _confirm("Run full system update & upgrade?", default=False):
                 print(f"  {C.DIM}Running updates...{C.RESET}")
@@ -2060,6 +2079,13 @@ def main() -> None:
     # Show language picker on first launch (if no saved language choice exists)
     if not has_saved_language():
         _language_picker_screen()
+
+    # Check for Toolkit updates from GitHub on startup
+    try:
+        if self_updater.check_and_prompt_update(C, T):
+            return
+    except Exception:
+        pass
 
     # Perform startup online license verification with feedback
     saved = get_saved_token()

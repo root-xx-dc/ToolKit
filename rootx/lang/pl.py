@@ -75,4 +75,12 @@ STRINGS = {
     "hash_tool_title": "GENERATOR HASEŁ & SUM KONTROLNYCH",
     "theme_selector_title": "WYBÓR MOTYWU INTERFEJSU",
     "web_panel_title": "PANEL WEBOWY LOCALHOST",
+    # Auto-updater
+    "update_available_title": "DOSTĘPNA AKTUALIZACJA",
+    "update_available_msg": "Dostępna jest nowa wersja / aktualizacja ROOT//X TOOLKIT na GitHubie!",
+    "update_prompt": "Czy chcesz pobrać i zainstalować tę aktualizację teraz? [t/N]",
+    "update_downloading": "Pobieranie i instalowanie aktualizacji z GitHuba...",
+    "update_success": "Aktualizacja zainstalowana pomyślnie! Restartowanie ROOT//X TOOLKIT...",
+    "update_failed": "Nie udało się automatycznie zainstalować aktualizacji.",
+    "update_uptodate": "Toolkit jest w najnowszej wersji.",
 }

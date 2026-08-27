@@ -75,4 +75,12 @@ STRINGS = {
     "hash_tool_title": "HASH & PASSWORD GENERATOR",
     "theme_selector_title": "SELECT COLOR THEME",
     "web_panel_title": "WEB PANEL LAUNCHER",
+    # Auto-updater
+    "update_available_title": "UPDATE AVAILABLE",
+    "update_available_msg": "A new update of ROOT//X TOOLKIT is available on GitHub!",
+    "update_prompt": "Do you want to download and install this update now? [y/N]",
+    "update_downloading": "Downloading and applying update from GitHub...",
+    "update_success": "Update installed successfully! Restarting ROOT//X TOOLKIT...",
+    "update_failed": "Update could not be applied automatically.",
+    "update_uptodate": "Toolkit is already up to date.",
 }
