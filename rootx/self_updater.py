@@ -245,14 +245,14 @@ def check_and_prompt_update(C: Any, T: Dict[str, str]) -> bool:
     msg = info.get("message", "")
     author = info.get("author", "")
 
-    print(f"\n  {C.YELLOW}{'═' * 50}{C.RESET}")
+    print(f"\n  {C.YELLOW}{'=' * 50}{C.RESET}")
     print(f"  {C.BOLD}{C.YELLOW}  {T.get('update_available_title', 'UPDATE AVAILABLE')}{C.RESET}")
-    print(f"  {C.YELLOW}{'═' * 50}{C.RESET}")
-    print(f"  {C.WHITE}  {T.get('update_available_msg', 'A new update is available on GitHub!')}{C.RESET}")
+    print(f"  {C.YELLOW}{'=' * 50}{C.RESET}")
+    print(f"  {C.WHITE}  {T.get('update_available_msg', 'A new update of ROOT//X TOOLKIT is available on GitHub!')}{C.RESET}")
     print(f"  {C.CYAN}  Commit: {C.BOLD}[{short_sha}]{C.RESET} - {msg}")
     if author:
         print(f"  {C.DIM}  Author: {author}{C.RESET}")
-    print(f"  {C.YELLOW}{'═' * 50}{C.RESET}\n")
+    print(f"  {C.YELLOW}{'=' * 50}{C.RESET}\n")
 
     prompt_txt = T.get("update_prompt", "Do you want to update now? [y/N]")
     try:
