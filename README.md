@@ -164,4 +164,4 @@ Get a license key through Discord — without a key, ROOT//X won't start.
 
 ---
 
-*ROOT//X TOOLKIT © 2024 — 11wiks & Szefuncio_xx*
+*ROOT//X TOOLKIT © 2026 — 11wiks & Szefuncio_xx*
