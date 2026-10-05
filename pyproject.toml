@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rootx"
+version = "2.4.0"
+description = "ROOT//X Advanced System & Network Toolkit"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31.0",
+    "colorama>=0.4.6",
+    "psutil>=5.9.0",
+    "cryptography>=41.0.0",
+    "pypresence>=4.3.0"
+]
+
+[project.scripts]
+rootx = "rootx.main:main"
+rootx-toolkit = "rootx.main:main"

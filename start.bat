@@ -60,20 +60,17 @@ echo [*] Sprawdzanie wymaganych bibliotek...
 
 %PYTHON_EXE% -c "import colorama, requests, psutil, cryptography, pypresence" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [*] Instalowanie brakujacych bibliotek z requirements.txt...
+    echo [*] Instalowanie bibliotek z requirements.txt...
     %PYTHON_EXE% -m pip install -r requirements.txt
-    if %errorlevel% neq 0 (
-        echo [!] Blad podczas instalacji bibliotek pip. Proba kontynuacji...
-    )
-) else (
-    echo [*] Wszystkie wymagane biblioteki sa zainstalowane.
 )
 
-echo.
-echo [*] Uruchamianie ROOT//X Toolkit...
+:: Re-link rootx command entrypoint (editable package)
+%PYTHON_EXE% -m pip install -e . --no-deps >nul 2>&1
+
+echo [*] Gotowe. Uruchamianie ROOT//X Toolkit...
 echo.
 
-:: 3. Run main.py
+:: 3. Run toolkit
 %PYTHON_EXE% main.py
 
 echo.

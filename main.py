@@ -1,5 +1,11 @@
 import os
 import sys
+
+# Ensure script root directory is in sys.path
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
+
 import time
 import platform
 from colorama import init, Fore, Style
