@@ -13,10 +13,11 @@ from colorama import Fore, Style
 
 API_VERSION_URL = "https://szefuncio-xx.bid/api/toolkit/version"
 BACKUP_DIR = os.path.expanduser("~/.rootx_toolkit_backup")
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ROOTX-Toolkit/2.4.0"}
 
 def check_for_updates(current_version: str, channel: str = "stable") -> dict | None:
     try:
-        res = requests.get(f"{API_VERSION_URL}?channel={channel}", timeout=5)
+        res = requests.get(f"{API_VERSION_URL}?channel={channel}", headers=HEADERS, timeout=5)
         if res.status_code == 200:
             data = res.json()
             latest_version = data.get("version")

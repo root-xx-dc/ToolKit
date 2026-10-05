@@ -61,6 +61,10 @@ def send_error_report(version: str, error_code: str, stack_trace: str = ""):
             "error_code": error_code,
             "sanitized_stack": sanitize_stack_trace(stack_trace),
         }
-        requests.post(TELEMETRY_ENDPOINT, json=payload, timeout=3)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ROOTX-Toolkit/2.4.0",
+            "Content-Type": "application/json"
+        }
+        requests.post(TELEMETRY_ENDPOINT, json=payload, headers=headers, timeout=5)
     except Exception:
         pass

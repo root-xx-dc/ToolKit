@@ -19,6 +19,10 @@ SERVER_AUTH_URL = "https://szefuncio-xx.bid/api/toolkit/auth"
 GIST_RAW_URL = "https://gist.githubusercontent.com/raw/5dd908cf231190e7ec3a134878c422e8/rootx_licenses.json"
 CACHE_FILE = os.path.expanduser("~/.rootx_license_cache")
 TOOLKIT_SALT = "rootx-toolkit-v1-static-salt-9f3a1c"
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ROOTX-Toolkit/2.4.0",
+    "Content-Type": "application/json"
+}
 
 def compute_token_hash(token: str) -> str:
     return hashlib.sha256((TOOLKIT_SALT + token.strip().upper()).encode("utf-8")).hexdigest()
@@ -39,7 +43,7 @@ def verify_remote_license(token: str) -> tuple[bool, str, dict | None]:
             "nonce": nonce,
             "signals": collect_security_signals(),
         }
-        res = requests.post(SERVER_AUTH_URL, json=payload, timeout=5)
+        res = requests.post(SERVER_AUTH_URL, json=payload, headers=HEADERS, timeout=7)
         if res.status_code == 200:
             data = res.json()
             if data.get("success"):
@@ -57,7 +61,7 @@ def verify_remote_license(token: str) -> tuple[bool, str, dict | None]:
     # 2. Gist fallback verification
     token_hash = compute_token_hash(token)
     try:
-        res = requests.get(GIST_RAW_URL, timeout=6)
+        res = requests.get(GIST_RAW_URL, headers=HEADERS, timeout=8)
         if res.status_code == 200:
             payload = res.json()
             hashes = payload.get("hashes", {})
