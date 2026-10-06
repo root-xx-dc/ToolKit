@@ -195,7 +195,7 @@ def check_and_prompt_update():
     if choice in ["t", "tak", "y", "yes"]:
         success = perform_update(update)
         if success:
-            print(f"  {Fore.GREEN}✓ Aktualizacja zainstalowana pomyślnie! Restartowanie ROOT//X TOOLKIT...{Style.RESET_ALL}\n")
+            print(f"  {Fore.GREEN}[+] Aktualizacja zainstalowana pomyslnie! Restartowanie ROOT//X TOOLKIT...{Style.RESET_ALL}\n")
             time.sleep(1.0)
             # Restart current process
             toolkit_dir = get_toolkit_dir()

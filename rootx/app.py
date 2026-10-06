@@ -7,13 +7,15 @@ from core.updater import check_and_prompt_update
 from core.license_guard import check_license_interactive
 from core.presence import DiscordRPC
 from core.system_info import get_system_summary
+from core.modules.hardware_monitor import run_hardware_monitor
+from core.modules.storage_benchmark import run_storage_benchmark
 from core.modules.server_manager import run_server_manager
 from core.modules.network_tools import run_network_tools
 from core.modules.security_audit import run_security_audit
 
 init(autoreset=True)
 
-VERSION = "2.4.0-PRO"
+VERSION = "2.5.0-PRO"
 APPLICATION_ID = "1556241281733107733"
 
 def clear_screen():
@@ -28,7 +30,7 @@ def print_banner(tier="Active", distro="Unknown"):
 {Fore.CYAN}██╔══██╗██║   ██║██║   ██║   ██║   {Fore.MAGENTA} ██╔██╗ 
 {Fore.CYAN}██║  ██║╚██████╔╝╚██████╔╝   ██║   {Fore.MAGENTA}██╔╝ ██╗
 {Fore.CYAN}╚═╝  ╚═╝ ╚═════╝  ╚═════╝    ╚═╝   {Fore.MAGENTA}╚═╝  ╚═╝{Style.RESET_ALL}
-{Fore.WHITE}       ROOT//X Advanced System & Network Toolkit
+{Fore.WHITE}       ROOT//X Advanced System & Hardware Toolkit
 {Fore.WHITE}       Version: {Fore.GREEN}{VERSION}{Fore.WHITE} | OS: {Fore.YELLOW}{distro}{Fore.WHITE} | Tier: {Fore.MAGENTA}{tier}
 {Fore.CYAN}=============================================================
 """
@@ -57,31 +59,39 @@ def run_toolkit():
 
     while True:
         print_banner(tier=tier, distro=distro_name)
-        print(f"{Fore.WHITE}[1] {Fore.CYAN}Server & Process Management")
-        print(f"{Fore.WHITE}[2] {Fore.CYAN}Network & Diagnostics Suite")
-        print(f"{Fore.WHITE}[3] {Fore.CYAN}Security & Port Auditor")
-        print(f"{Fore.WHITE}[4] {Fore.CYAN}System Information & HWID")
-        print(f"{Fore.WHITE}[5] {Fore.CYAN}Refresh License Status")
+        print(f"{Fore.WHITE}[1] {Fore.CYAN}Hardware & Sensor Diagnostics")
+        print(f"{Fore.WHITE}[2] {Fore.CYAN}Storage & Drive Benchmark")
+        print(f"{Fore.WHITE}[3] {Fore.CYAN}Process & Task Manager")
+        print(f"{Fore.WHITE}[4] {Fore.CYAN}Network Diagnostics & DNS Suite")
+        print(f"{Fore.WHITE}[5] {Fore.CYAN}Security & Port Auditor")
+        print(f"{Fore.WHITE}[6] {Fore.CYAN}System Information & HWID")
+        print(f"{Fore.WHITE}[7] {Fore.CYAN}Refresh License Status")
         print(f"{Fore.WHITE}[0] {Fore.RED}Exit Toolkit\n")
 
-        choice = input(f"{Fore.WHITE}Select Option [0-5]: {Style.RESET_ALL}").strip()
+        choice = input(f"{Fore.WHITE}Select Option [0-7]: {Style.RESET_ALL}").strip()
 
         if choice == "1":
-            rpc.update_status(details="Server & Process Manager", state=f"Tier: {tier}")
-            run_server_manager()
+            rpc.update_status(details="Hardware Diagnostics", state=f"Tier: {tier}")
+            run_hardware_monitor()
         elif choice == "2":
+            rpc.update_status(details="Storage Benchmark", state=f"Tier: {tier}")
+            run_storage_benchmark()
+        elif choice == "3":
+            rpc.update_status(details="Task & Process Manager", state=f"Tier: {tier}")
+            run_server_manager()
+        elif choice == "4":
             rpc.update_status(details="Network Diagnostics Suite", state=f"Tier: {tier}")
             run_network_tools()
-        elif choice == "3":
+        elif choice == "5":
             rpc.update_status(details="Security & Audit Tools", state=f"Tier: {tier}")
             run_security_audit()
-        elif choice == "4":
+        elif choice == "6":
             print_banner(tier=tier, distro=distro_name)
             print(f"{Fore.GREEN}=== System & Hardware Fingerprint ===")
             for k, v in sys_info.items():
                 print(f"{Fore.WHITE}{k.replace('_', ' ').title()}: {Fore.CYAN}{v}")
             input(f"\n{Fore.WHITE}Press ENTER to return to menu...")
-        elif choice == "5":
+        elif choice == "7":
             license_data = check_license_interactive(force_recheck=True)
             tier = license_data.get("tier", "STANDARD").upper()
         elif choice == "0":

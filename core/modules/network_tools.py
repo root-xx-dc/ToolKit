@@ -77,8 +77,8 @@ def run_network_tools():
         print(f"{Fore.WHITE}[2] Domain DNS Resolver")
         print(f"{Fore.WHITE}[3] HTTP/HTTPS Endpoint Status Checker")
         print(f"{Fore.WHITE}[4] Public IP & Geo Information")
-        print(f"{Fore.WHITE}[5] ⚡ DNS Benchmark & 1-Click Cache Cleaner")
-        print(f"{Fore.WHITE}[6] 🧹 System Memory & Network Cache Cleaner")
+        print(f"{Fore.WHITE}[5] DNS Benchmark & 1-Click Cache Cleaner")
+        print(f"{Fore.WHITE}[6] System Memory & Network Cache Cleaner")
         print(f"{Fore.WHITE}[0] Back to Main Menu\n")
 
         c = input(f"{Fore.WHITE}Select Option: {Style.RESET_ALL}").strip()

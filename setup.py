@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="rootx",
-    version="2.4.0",
+    version="2.5.0",
     description="ROOT//X Advanced System & Network Toolkit",
     author="11wikkss",
     packages=find_packages(),
