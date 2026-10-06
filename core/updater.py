@@ -7,18 +7,19 @@ for both Git clones and standalone directory/ZIP installations.
 import os
 import sys
 import time
+import json
 import zipfile
 import tempfile
 import subprocess
-import requests
+import urllib.request
 from colorama import Fore, Style
 
 GITHUB_REPO = "root-xx-dc/ToolKit"
 GITHUB_COMMITS_API = f"https://api.github.com/repos/{GITHUB_REPO}/commits/main"
 GITHUB_ZIP_URL = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/main.zip"
-CURRENT_COMMIT_FALLBACK = "0c9e70f"
+CURRENT_COMMIT_FALLBACK = "5ba9154"
 HEADERS = {
-    "User-Agent": "ROOTX-Toolkit-Updater/2.4.0 (Windows NT 10.0; Win64; x64)",
+    "User-Agent": "ROOTX-Toolkit-Updater/2.5.0 (Windows NT 10.0; Win64; x64)",
     "Accept": "application/vnd.github.v3+json"
 }
 
@@ -63,24 +64,26 @@ def get_local_commit() -> str:
 def check_for_remote_update() -> dict | None:
     """Checks GitHub for the latest commit on main branch."""
     try:
-        res = requests.get(GITHUB_COMMITS_API, headers=HEADERS, timeout=4)
-        if res.status_code == 200:
-            data = res.json()
-            remote_sha = data.get("sha", "")
-            commit_info = data.get("commit", {})
-            message = commit_info.get("message", "").split("\n")[0]
-            author = commit_info.get("author", {}).get("name", "ROOT//X Dev")
+        req = urllib.request.Request(GITHUB_COMMITS_API, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=4) as response:
+            if response.status == 200:
+                raw_data = response.read().decode("utf-8")
+                data = json.loads(raw_data)
+                remote_sha = data.get("sha", "")
+                commit_info = data.get("commit", {})
+                message = commit_info.get("message", "").split("\n")[0]
+                author = commit_info.get("author", {}).get("name", "ROOT//X Dev")
 
-            local_sha = get_local_commit()
+                local_sha = get_local_commit()
 
-            if remote_sha and not local_sha.startswith(remote_sha[:7]) and not remote_sha.startswith(local_sha[:7]):
-                return {
-                    "remote_sha": remote_sha,
-                    "short_sha": remote_sha[:7],
-                    "message": message,
-                    "author": author,
-                    "local_sha": local_sha[:7]
-                }
+                if remote_sha and not local_sha.startswith(remote_sha[:7]) and not remote_sha.startswith(local_sha[:7]):
+                    return {
+                        "remote_sha": remote_sha,
+                        "short_sha": remote_sha[:7],
+                        "message": message,
+                        "author": author,
+                        "local_sha": local_sha[:7]
+                    }
     except Exception:
         pass
     return None
@@ -121,15 +124,19 @@ def perform_update(update_info: dict) -> bool:
 
     # Method 2: ZIP Download & Extract (Standalone Directory)
     try:
-        res = requests.get(GITHUB_ZIP_URL, headers=HEADERS, stream=True, timeout=30)
-        if res.status_code != 200:
-            print(f"{Fore.RED}[-] Nie udało się pobrać archiwum: HTTP {res.status_code}{Style.RESET_ALL}")
-            return False
+        req = urllib.request.Request(GITHUB_ZIP_URL, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=30) as response:
+            if response.status != 200:
+                print(f"{Fore.RED}[-] Nie udalo sie pobrac archiwum: HTTP {response.status}{Style.RESET_ALL}")
+                return False
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
-            tmp_path = tmp_file.name
-            for chunk in res.iter_content(chunk_size=16384):
-                tmp_file.write(chunk)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
+                tmp_path = tmp_file.name
+                while True:
+                    chunk = response.read(16384)
+                    if not chunk:
+                        break
+                    tmp_file.write(chunk)
 
         # Extract files over toolkit_dir
         with zipfile.ZipFile(tmp_path, "r") as zf:
@@ -171,7 +178,7 @@ def perform_update(update_info: dict) -> bool:
 
         return True
     except Exception as e:
-        print(f"{Fore.RED}[-] Błąd podczas instalacji aktualizacji: {e}{Style.RESET_ALL}")
+        print(f"{Fore.RED}[-] Blad podczas instalacji aktualizacji: {e}{Style.RESET_ALL}")
         return False
 
 def check_and_prompt_update():
@@ -182,15 +189,15 @@ def check_and_prompt_update():
 
     banner = f"""
   {Fore.CYAN}==================================================
-    {Fore.GREEN}DOSTĘPNA AKTUALIZACJA / UPDATE AVAILABLE
+    {Fore.GREEN}DOSTEPNA AKTUALIZACJA / UPDATE AVAILABLE
   {Fore.CYAN}==================================================
-    {Fore.WHITE}Dostępna jest nowa wersja / aktualizacja ROOT//X TOOLKIT na GitHubie!
+    {Fore.WHITE}Dostepna jest nowa wersja / aktualizacja ROOT//X TOOLKIT na GitHubie!
     {Fore.WHITE}Commit: {Fore.YELLOW}[{update['short_sha']}]{Fore.WHITE} - {update['message']}
     {Fore.WHITE}Autor:  {Fore.CYAN}{update['author']}
   {Fore.CYAN}=================================================={Style.RESET_ALL}
 """
     print(banner)
-    choice = input(f"  {Fore.WHITE}Czy chcesz pobrać i zainstalować tę aktualizację teraz? [t/N]: {Style.RESET_ALL}").strip().lower()
+    choice = input(f"  {Fore.WHITE}Czy chcesz pobrac i zainstalowac te aktualizacje teraz? [t/N]: {Style.RESET_ALL}").strip().lower()
 
     if choice in ["t", "tak", "y", "yes"]:
         success = perform_update(update)
@@ -205,7 +212,7 @@ def check_and_prompt_update():
             else:
                 os.execv(sys.executable, [sys.executable] + sys.argv)
         else:
-            print(f"  {Fore.RED}[!] Aktualizacja nie powiodła się. Kontynuowanie uruchamiania...{Style.RESET_ALL}\n")
+            print(f"  {Fore.RED}[!] Aktualizacja nie powiodla sie. Kontynuowanie uruchamiania...{Style.RESET_ALL}\n")
             time.sleep(1.5)
     else:
-        print(f"  {Fore.YELLOW}[*] Pominięto aktualizację.{Style.RESET_ALL}\n")
+        print(f"  {Fore.YELLOW}[*] Pominieto aktualizacje.{Style.RESET_ALL}\n")
