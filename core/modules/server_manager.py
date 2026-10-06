@@ -16,10 +16,15 @@ def run_server_manager():
         if c == "1":
             cpu = psutil.cpu_percent(interval=1)
             ram = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
+            root_path = os.path.splitdrive(os.getcwd())[0] + os.sep if os.name == 'nt' else '/'
+            try:
+                disk = psutil.disk_usage(root_path)
+                disk_str = f"{disk.percent}% ({round(disk.used/(1024**3),2)} GB / {round(disk.total/(1024**3),2)} GB)"
+            except Exception:
+                disk_str = "N/A"
             print(f"\n{Fore.GREEN}CPU Usage:{Fore.WHITE} {cpu}%")
             print(f"{Fore.GREEN}RAM Usage:{Fore.WHITE} {ram.percent}% ({round(ram.used/(1024**3),2)} GB / {round(ram.total/(1024**3),2)} GB)")
-            print(f"{Fore.GREEN}Disk Usage:{Fore.WHITE} {disk.percent}% ({round(disk.used/(1024**3),2)} GB / {round(disk.total/(1024**3),2)} GB)")
+            print(f"{Fore.GREEN}Disk Usage ({root_path}):{Fore.WHITE} {disk_str}")
         elif c == "2":
             print(f"\n{Fore.GREEN}{'PID':<8} {'User':<15} {'CPU %':<8} {'RAM %':<8} {'Name'}")
             print("-" * 60)
