@@ -1,67 +1,211 @@
 """
-ROOT//X Toolkit Client Updater
-Validates Ed25519 signatures and SHA-256 hashes prior to installation.
-Includes automatic rollback mechanism on integrity failures.
+ROOT//X Toolkit Auto-Updater
+Seamlessly checks for the latest GitHub commits and updates the application
+for both Git clones and standalone directory/ZIP installations.
 """
 
 import os
 import sys
-import shutil
-import hashlib
+import time
+import zipfile
+import tempfile
+import subprocess
 import requests
 from colorama import Fore, Style
 
-API_VERSION_URL = "https://szefuncio-xx.bid/api/toolkit/version"
-BACKUP_DIR = os.path.expanduser("~/.rootx_toolkit_backup")
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ROOTX-Toolkit/2.4.0"}
+GITHUB_REPO = "root-xx-dc/ToolKit"
+GITHUB_COMMITS_API = f"https://api.github.com/repos/{GITHUB_REPO}/commits/main"
+GITHUB_ZIP_URL = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/main.zip"
+CURRENT_COMMIT_FALLBACK = "0c9e70f"
+HEADERS = {
+    "User-Agent": "ROOTX-Toolkit-Updater/2.4.0 (Windows NT 10.0; Win64; x64)",
+    "Accept": "application/vnd.github.v3+json"
+}
 
-def check_for_updates(current_version: str, channel: str = "stable") -> dict | None:
+def get_toolkit_dir() -> str:
+    """Returns the base directory of the ToolKit installation."""
+    pkg_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return pkg_dir
+
+def get_local_commit() -> str:
+    """Gets the currently installed commit hash."""
+    toolkit_dir = get_toolkit_dir()
+    
+    # 1. Try git rev-parse if .git exists
+    git_dir = os.path.join(toolkit_dir, ".git")
+    if os.path.exists(git_dir):
+        try:
+            res = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=toolkit_dir,
+                capture_output=True,
+                text=True,
+                timeout=3
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                return res.stdout.strip()
+        except Exception:
+            pass
+
+    # 2. Try .commit_hash file
+    hash_file = os.path.join(toolkit_dir, ".commit_hash")
+    if os.path.exists(hash_file):
+        try:
+            with open(hash_file, "r", encoding="utf-8") as f:
+                h = f.read().strip()
+                if h:
+                    return h
+        except Exception:
+            pass
+
+    return CURRENT_COMMIT_FALLBACK
+
+def check_for_remote_update() -> dict | None:
+    """Checks GitHub for the latest commit on main branch."""
     try:
-        res = requests.get(f"{API_VERSION_URL}?channel={channel}", headers=HEADERS, timeout=5)
+        res = requests.get(GITHUB_COMMITS_API, headers=HEADERS, timeout=4)
         if res.status_code == 200:
             data = res.json()
-            latest_version = data.get("version")
-            if latest_version and latest_version != current_version:
-                return data
+            remote_sha = data.get("sha", "")
+            commit_info = data.get("commit", {})
+            message = commit_info.get("message", "").split("\n")[0]
+            author = commit_info.get("author", {}).get("name", "ROOT//X Dev")
+
+            local_sha = get_local_commit()
+
+            if remote_sha and not local_sha.startswith(remote_sha[:7]) and not remote_sha.startswith(local_sha[:7]):
+                return {
+                    "remote_sha": remote_sha,
+                    "short_sha": remote_sha[:7],
+                    "message": message,
+                    "author": author,
+                    "local_sha": local_sha[:7]
+                }
     except Exception:
         pass
     return None
 
-def verify_file_sha256(filepath: str, expected_sha256: str) -> bool:
-    try:
-        sha = hashlib.sha256()
-        with open(filepath, "rb") as f:
-            while chunk := f.read(65536):
-                sha.update(chunk)
-        return sha.hexdigest().lower() == expected_sha256.lower().strip()
-    except Exception:
-        return False
+def perform_update(update_info: dict) -> bool:
+    """Performs the actual update via Git pull or ZIP extraction."""
+    toolkit_dir = get_toolkit_dir()
+    git_dir = os.path.join(toolkit_dir, ".git")
+    remote_sha = update_info.get("remote_sha", "")
 
-def apply_update(download_url: str, expected_sha256: str, target_dir: str) -> bool:
-    print(f"{Fore.CYAN}[*] Downloading update package...{Style.RESET_ALL}")
-    temp_file = os.path.join(target_dir, "update_pkg.bin")
-    
+    print(f"\n{Fore.CYAN}[*] Pobieranie i instalowanie aktualizacji z GitHuba...{Style.RESET_ALL}")
+
+    # Method 1: Git Pull
+    if os.path.exists(git_dir):
+        try:
+            res = subprocess.run(
+                ["git", "pull", "--rebase"],
+                cwd=toolkit_dir,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            if res.returncode == 0:
+                # Save hash file as backup
+                with open(os.path.join(toolkit_dir, ".commit_hash"), "w", encoding="utf-8") as f:
+                    f.write(remote_sha)
+                
+                # Re-link entry point
+                subprocess.run(
+                    [sys.executable, "-m", "pip", "install", "-e", ".", "--no-deps"],
+                    cwd=toolkit_dir,
+                    capture_output=True,
+                    timeout=15
+                )
+                return True
+        except Exception:
+            pass
+
+    # Method 2: ZIP Download & Extract (Standalone Directory)
     try:
-        res = requests.get(download_url, stream=True, timeout=30)
+        res = requests.get(GITHUB_ZIP_URL, headers=HEADERS, stream=True, timeout=30)
         if res.status_code != 200:
-            print(f"{Fore.RED}[-] Failed to download update package: HTTP {res.status_code}{Style.RESET_ALL}")
+            print(f"{Fore.RED}[-] Nie udało się pobrać archiwum: HTTP {res.status_code}{Style.RESET_ALL}")
             return False
 
-        with open(temp_file, "wb") as f:
-            for chunk in res.iter_content(chunk_size=8192):
-                f.write(chunk)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
+            tmp_path = tmp_file.name
+            for chunk in res.iter_content(chunk_size=16384):
+                tmp_file.write(chunk)
 
-        print(f"{Fore.YELLOW}[*] Verifying cryptographic SHA-256 integrity...{Style.RESET_ALL}")
-        if not verify_file_sha256(temp_file, expected_sha256):
-            print(f"{Fore.RED}[!] Integrity check failed! Package hash does not match official release.{Style.RESET_ALL}")
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-            return False
+        # Extract files over toolkit_dir
+        with zipfile.ZipFile(tmp_path, "r") as zf:
+            namelist = zf.namelist()
+            top_dir = namelist[0].split("/")[0] if namelist else "ToolKit-main"
 
-        print(f"{Fore.GREEN}[+] Integrity verified successfully! Ready to restart.{Style.RESET_ALL}")
+            for member in namelist:
+                if member.endswith("/"):
+                    continue
+                # Strip top level directory (e.g. ToolKit-main/)
+                rel_path = member[len(top_dir) + 1:] if member.startswith(top_dir + "/") else member
+                if not rel_path:
+                    continue
+
+                dest_path = os.path.join(toolkit_dir, rel_path)
+                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+
+                with zf.open(member) as src, open(dest_path, "wb") as dst:
+                    dst.write(src.read())
+
+        # Cleanup temp file
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+        # Write current commit hash
+        with open(os.path.join(toolkit_dir, ".commit_hash"), "w", encoding="utf-8") as f:
+            f.write(remote_sha)
+
+        # Re-link editable package
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "pip", "install", "-e", ".", "--no-deps"],
+                cwd=toolkit_dir,
+                capture_output=True,
+                timeout=15
+            )
+        except Exception:
+            pass
+
         return True
     except Exception as e:
-        print(f"{Fore.RED}[-] Update error: {str(e)}{Style.RESET_ALL}")
-        if os.path.exists(temp_file):
-            os.remove(temp_file)
+        print(f"{Fore.RED}[-] Błąd podczas instalacji aktualizacji: {e}{Style.RESET_ALL}")
         return False
+
+def check_and_prompt_update():
+    """Entry point called on startup. Prompts user if an update is found."""
+    update = check_for_remote_update()
+    if not update:
+        return
+
+    banner = f"""
+  {Fore.CYAN}==================================================
+    {Fore.GREEN}DOSTĘPNA AKTUALIZACJA / UPDATE AVAILABLE
+  {Fore.CYAN}==================================================
+    {Fore.WHITE}Dostępna jest nowa wersja / aktualizacja ROOT//X TOOLKIT na GitHubie!
+    {Fore.WHITE}Commit: {Fore.YELLOW}[{update['short_sha']}]{Fore.WHITE} - {update['message']}
+    {Fore.WHITE}Autor:  {Fore.CYAN}{update['author']}
+  {Fore.CYAN}=================================================={Style.RESET_ALL}
+"""
+    print(banner)
+    choice = input(f"  {Fore.WHITE}Czy chcesz pobrać i zainstalować tę aktualizację teraz? [t/N]: {Style.RESET_ALL}").strip().lower()
+
+    if choice in ["t", "tak", "y", "yes"]:
+        success = perform_update(update)
+        if success:
+            print(f"  {Fore.GREEN}✓ Aktualizacja zainstalowana pomyślnie! Restartowanie ROOT//X TOOLKIT...{Style.RESET_ALL}\n")
+            time.sleep(1.0)
+            # Restart current process
+            toolkit_dir = get_toolkit_dir()
+            main_script = os.path.join(toolkit_dir, "main.py")
+            if os.path.exists(main_script):
+                os.execv(sys.executable, [sys.executable, main_script])
+            else:
+                os.execv(sys.executable, [sys.executable] + sys.argv)
+        else:
+            print(f"  {Fore.RED}[!] Aktualizacja nie powiodła się. Kontynuowanie uruchamiania...{Style.RESET_ALL}\n")
+            time.sleep(1.5)
+    else:
+        print(f"  {Fore.YELLOW}[*] Pominięto aktualizację.{Style.RESET_ALL}\n")

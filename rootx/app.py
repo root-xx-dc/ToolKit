@@ -3,6 +3,7 @@ import sys
 import time
 import platform
 from colorama import init, Fore, Style
+from core.updater import check_and_prompt_update
 from core.license_guard import check_license_interactive
 from core.presence import DiscordRPC
 from core.system_info import get_system_summary
@@ -34,6 +35,12 @@ def print_banner(tier="Active", distro="Unknown"):
     print(banner)
 
 def run_toolkit():
+    # 0. Check for GitHub updates
+    try:
+        check_and_prompt_update()
+    except Exception:
+        pass
+
     # 1. Hardware & OS detection
     sys_info = get_system_summary()
     distro_name = sys_info.get("os_name", platform.system())
